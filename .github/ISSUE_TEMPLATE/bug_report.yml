@@ -1,0 +1,55 @@
+name: Bug report
+description: Report incorrect monitoring, CLI, configuration, or installation behavior
+title: "[Bug]: "
+labels: [bug]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove tokens, chat IDs, hostnames, usernames, personal paths,
+        process command lines, and other private data before submitting.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: input
+    id: cli-version
+    attributes:
+      label: mac-sentinel version
+      placeholder: "mac-sentinel --version"
+    validations:
+      required: true
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: "sw_vers"
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command or configuration
+      description: Include the smallest command or config needed to reproduce the issue.
+      render: text
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant sanitized output
+      render: shell
