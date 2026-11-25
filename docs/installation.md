@@ -21,9 +21,28 @@ mac-sentinel install-service
 mac-sentinel uninstall-service
 ```
 
+## Current development setup
+
+Python 3.11 or newer is required.
+
+```bash
+python3 -m pip install --user -e '.[dev]'
+mac-sentinel --version
+mac-sentinel doctor
+mac-sentinel collect --once --pretty
+```
+
+For a checkout without installing the console script:
+
+```bash
+PYTHONPATH=src python3 -m macos_resource_sentinel doctor
+PYTHONPATH=src python3 -m macos_resource_sentinel collect --once --pretty
+PYTHONPATH=src python3 -m pytest -q
+```
+
 ## Package layout
 
-The implementation should use a `src` layout:
+The implementation uses a `src` layout:
 
 ```text
 src/macos_resource_sentinel/

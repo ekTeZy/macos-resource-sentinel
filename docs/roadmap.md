@@ -2,7 +2,7 @@
 
 ## Milestone 0 — specification
 
-Status: in progress.
+Status: complete.
 
 - Public documentation structure.
 - Architecture.
@@ -13,6 +13,8 @@ Status: in progress.
 - Installation plan.
 
 ## Milestone 1 — local collector and CLI
+
+Status: in progress.
 
 - Python package with a `src` layout.
 - `mac-sentinel collect --once`.

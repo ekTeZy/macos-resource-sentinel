@@ -60,30 +60,49 @@ Available actions:
 
 The exact template will be implemented by the notifier, but the format is intentionally stable and machine-generated.
 
-## Planned CLI
+## CLI quick start
 
-The target command is `mac-sentinel`:
+The command is `mac-sentinel`. Milestone 1 currently includes environment checks and one-shot metric collection:
 
 ```bash
 # Check the local environment and configuration
 mac-sentinel doctor
 
-# Print one system sample
-mac-sentinel collect --once
+# Print one normalized system sample as JSON
+mac-sentinel collect --once --pretty
 
-# Run the monitor in the foreground
+# Validate a configuration file without starting the monitor
+mac-sentinel monitor --validate-config
+```
+
+The following commands are reserved for later milestones and fail explicitly until implemented:
+
+```bash
 mac-sentinel monitor
-
-# Show recorded incidents
 mac-sentinel incidents list
 mac-sentinel incidents show INCIDENT_ID
-
-# Install or remove the LaunchAgent
 mac-sentinel install-service
 mac-sentinel uninstall-service
 ```
 
-These commands describe the planned interface. The implementation starts with Milestone 1 in the [roadmap](docs/roadmap.md).
+## Development installation
+
+Python 3.11 or newer is required:
+
+```bash
+git clone https://github.com/ektezy/macos-resource-sentinel.git
+cd macos-resource-sentinel
+python3 -m pip install --user -e '.[dev]'
+mac-sentinel doctor
+```
+
+For local development without installing the package:
+
+```bash
+PYTHONPATH=src python3 -m macos_resource_sentinel doctor
+PYTHONPATH=src python3 -m macos_resource_sentinel collect --once --pretty
+PYTHONPATH=src python3 -m pytest -q
+```
 
 ## Configuration
 
@@ -164,9 +183,9 @@ The installer will render local paths and state locations at installation time.
 
 ## Project status
 
-The repository is currently in the specification phase. Architecture, alert behavior, event formats, security boundaries, configuration, installation, and the implementation roadmap are documented before code is added.
+Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 adds the Python package, configuration validation, `doctor`, and `collect --once`.
 
-Current milestone: **Milestone 0 — specification**.
+Current milestone: **Milestone 1 — local collector and CLI**.
 
 ## Documentation
 
