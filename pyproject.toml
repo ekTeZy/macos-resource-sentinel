@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "macos-resource-sentinel"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local macOS resource incident monitor with safe assistant handoff"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
   {name = "ektezy"}
 ]
@@ -17,11 +17,11 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: MacOS X",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: MacOS",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: System :: Monitoring",
   "Topic :: Utilities"
 ]
@@ -41,6 +41,7 @@ mac-sentinel = "macos_resource_sentinel.cli:main"
 Homepage = "https://github.com/ektezy/macos-resource-sentinel"
 Repository = "https://github.com/ektezy/macos-resource-sentinel"
 Issues = "https://github.com/ektezy/macos-resource-sentinel/issues"
+Changelog = "https://github.com/ektezy/macos-resource-sentinel/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
