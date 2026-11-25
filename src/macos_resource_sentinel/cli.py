@@ -10,8 +10,10 @@ from typing import Any, Sequence, TextIO
 
 from . import __version__
 from .collector import CollectionError, collect_once
-from .config import ConfigError, load_config
+from .config import ConfigError, load_config, state_dir
 from .doctor import DoctorReport, run_doctor
+from .monitor import MonitorRunner
+from .storage import StorageError
 
 
 EXIT_OK = 0
@@ -76,12 +78,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     monitor_parser = subparsers.add_parser(
         "monitor",
-        help="run the continuous monitor (planned for Milestone 2)",
+        help="run the continuous deterministic monitor",
     )
     monitor_parser.add_argument(
         "--validate-config",
         action="store_true",
         help="validate configuration without starting the loop",
+    )
+    monitor_parser.add_argument(
+        "--max-samples",
+        type=int,
+        help="stop after collecting this many samples (useful for diagnostics)",
+    )
+    monitor_parser.add_argument(
+        "--ignore-startup-grace",
+        action="store_true",
+        help="do not suppress confirmed signals during startup grace",
     )
 
     incidents_parser = subparsers.add_parser(
@@ -117,6 +129,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return EXIT_ERROR
     except CollectionError as exc:
         print(f"collection error: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+    except (StorageError, ValueError) as exc:
+        print(f"monitor error: {exc}", file=sys.stderr)
         return EXIT_ERROR
     except KeyboardInterrupt:
         print("interrupted", file=sys.stderr)
@@ -164,8 +179,14 @@ def _cmd_monitor(args: argparse.Namespace) -> int:
     if args.validate_config:
         print("configuration is valid")
         return EXIT_OK
-    print("continuous monitoring is planned for Milestone 2", file=sys.stderr)
-    return EXIT_NOT_IMPLEMENTED
+
+    runner = MonitorRunner(loaded.data, state_dir=state_dir(loaded.data))
+    collected = runner.run(
+        max_samples=args.max_samples,
+        ignore_startup_grace=args.ignore_startup_grace,
+    )
+    print(f"monitor stopped after {collected} sample(s)")
+    return EXIT_OK
 
 
 def _cmd_planned(command: str) -> int:
