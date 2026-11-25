@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import platform
+import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -66,7 +67,7 @@ def collect_once(
             "available_bytes": int(virtual_memory.available),
             "used_bytes": int(virtual_memory.used),
             "percent": float(virtual_memory.percent),
-            "pressure": "unknown",
+            "pressure": read_memory_pressure(),
         },
         swap={
             "total_bytes": int(swap_memory.total),
@@ -137,6 +138,37 @@ def _collect_disks(paths: list[str]) -> list[dict[str, Any]]:
             }
         )
     return disks
+
+
+def read_memory_pressure() -> str:
+    """Read macOS kernel memory pressure without applying pressure.
+
+    Returns ``normal``, ``warning``, ``critical``, or ``unknown``. The raw
+    kernel levels are 1, 2, and 4 respectively.
+    """
+
+    if platform.system() != "Darwin":
+        return "unknown"
+
+    try:
+        result = subprocess.run(
+            ["/usr/sbin/sysctl", "-n", "kern.memorystatus_vm_pressure_level"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=1,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return "unknown"
+
+    if result.returncode != 0:
+        return "unknown"
+
+    return {
+        "1": "normal",
+        "2": "warning",
+        "4": "critical",
+    }.get(result.stdout.strip(), "unknown")
 
 
 def _safe_string(value: Any) -> str | None:
