@@ -46,6 +46,8 @@ Status: complete.
 
 ## Milestone 4 — LaunchAgent
 
+Status: complete.
+
 - Generic plist template.
 - `install-service` command.
 - `uninstall-service` command.

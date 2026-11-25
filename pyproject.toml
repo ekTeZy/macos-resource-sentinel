@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "macos-resource-sentinel"
-version = "0.3.0"
+version = "0.4.0"
 description = "Local macOS resource incident monitor with safe assistant handoff"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-25
+
+### Added
+
+- User-level LaunchAgent management with `mac-sentinel install-service`, `service-status`, and `uninstall-service`.
+- Plist generation with `plistlib`, including `MAC_SENTINEL_*` environment propagation for service credentials.
+- Idempotent service installation with `launchctl bootstrap` and `bootout`, with `load`/`unload` fallback.
+- Config permission warnings during service installation.
+- Service tests for plist rendering, environment filtering, permission checks, and install idempotency.
+
 ## [0.3.0] - 2026-11-25
 
 ### Added

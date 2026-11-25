@@ -1,4 +1,4 @@
-# Installation plan
+# Installation
 
 ## Target installation model
 
@@ -6,19 +6,27 @@ The project is installed as a user-level Python CLI and runs through a macOS Lau
 
 The MVP does not require a system daemon or `sudo`.
 
-## Planned commands
+## Commands
+
+Implemented:
 
 ```bash
 mac-sentinel --version
 mac-sentinel doctor
 mac-sentinel collect --once
 mac-sentinel monitor
+mac-sentinel install-service
+mac-sentinel service-status
+mac-sentinel uninstall-service
+```
+
+Planned for later milestones:
+
+```bash
 mac-sentinel incidents list
 mac-sentinel incidents show INCIDENT_ID
 mac-sentinel actions request INCIDENT_ID terminate-process
 mac-sentinel actions confirm ACTION_ID
-mac-sentinel install-service
-mac-sentinel uninstall-service
 ```
 
 ## User-level CLI setup
@@ -100,14 +108,15 @@ LaunchAgent:
 ~/Library/LaunchAgents/
 ```
 
-Log output should be available through both:
+Log output is available in the local state directory:
 
-- `mac-sentinel logs`;
-- the local state directory.
+- `monitor.stdout.log`;
+- `monitor.stderr.log`;
+- `monitor.log`.
 
 ## LaunchAgent policy
 
-The installer should render a plist from a generic template.
+The installer generates the plist programmatically with `plistlib` (no shell interpolation); the file under `launchd/` is a reference template.
 
 User-specific values are resolved locally:
 
@@ -115,9 +124,10 @@ User-specific values are resolved locally:
 - current config path;
 - current state directory;
 - label based on the project name;
-- standard output and error paths.
+- standard output and error paths;
+- `MAC_SENTINEL_*` environment variables captured at install time.
 
-A generated plist with local paths is runtime state and must not be committed.
+A generated plist with local paths is runtime state and must not be committed. Re-running `install-service` is idempotent: an unchanged plist is left alone, a changed executable path is rewritten, and a loaded agent is restarted.
 
 ## First-run flow
 
@@ -145,7 +155,7 @@ mac-sentinel install-service
 ```bash
 mac-sentinel doctor
 mac-sentinel monitor --validate-config
-mac-sentinel install-service --replace
+mac-sentinel install-service
 ```
 
 An upgrade must preserve:

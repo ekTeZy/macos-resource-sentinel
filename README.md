@@ -91,8 +91,6 @@ The following commands are reserved for later milestones and fail explicitly unt
 ```bash
 mac-sentinel incidents list
 mac-sentinel incidents show INCIDENT_ID
-mac-sentinel install-service
-mac-sentinel uninstall-service
 ```
 
 Foreground monitoring writes local incident history and state to:
@@ -232,26 +230,29 @@ See the [security model](docs/security-model.md) for details.
 
 ## Running as a background service
 
-The planned service mode uses a user-level macOS LaunchAgent:
+The monitor can run as a user-level macOS LaunchAgent:
 
 ```bash
 mac-sentinel install-service
+mac-sentinel service-status
 mac-sentinel uninstall-service
 ```
 
-A generic plist template is available at:
+The installer renders a plist at `~/Library/LaunchAgents/com.macos-resource-sentinel.plist`, creates the state directory, and loads the agent with `launchctl`. `MAC_SENTINEL_*` environment variables (such as Telegram credentials) are copied into the agent environment, so export them before installing. The agent restarts automatically at login and keeps running until uninstalled; stdout and stderr go to `monitor.stdout.log` and `monitor.stderr.log` in the state directory.
+
+A generic plist template for reference is available at:
 
 ```text
 launchd/com.macos-resource-sentinel.plist.template
 ```
 
-The installer will render local paths and state locations at installation time.
+Re-run `install-service` after upgrading the package so the plist points at the current executable.
 
 ## Project status
 
-Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 added the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history. Milestone 3 adds stable notification formatting, native macOS and Telegram delivery, rate limits, quiet hours, and delivery auditing.
+Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 added the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history. Milestone 3 added stable notification formatting, native macOS and Telegram delivery, rate limits, quiet hours, and delivery auditing. Milestone 4 adds the user-level LaunchAgent with `install-service`, `service-status`, and `uninstall-service`.
 
-Current milestone: **Milestone 3 — notifications**.
+Current milestone: **Milestone 4 — LaunchAgent**.
 
 ## Documentation
 
