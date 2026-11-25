@@ -86,11 +86,27 @@ mac-sentinel monitor
 mac-sentinel monitor --max-samples 3
 ```
 
-The following commands are reserved for later milestones and fail explicitly until implemented:
+Incident history is inspectable at any time:
 
 ```bash
+# List incidents, newest first
 mac-sentinel incidents list
+
+# Show one incident with its rule, process, and timing
 mac-sentinel incidents show INCIDENT_ID
+
+# Print an assistant-ready diagnostic bundle as JSON
+mac-sentinel incidents bundle INCIDENT_ID
+
+# Aggregate history for a report
+mac-sentinel summary --period day
+mac-sentinel summary --period week --json
+```
+
+The following command is reserved for a later milestone and fails explicitly until implemented:
+
+```bash
+mac-sentinel actions request INCIDENT_ID process.terminate
 ```
 
 Foreground monitoring writes local incident history and state to:
@@ -250,9 +266,9 @@ Re-run `install-service` after upgrading the package so the plist points at the 
 
 ## Project status
 
-Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 added the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history. Milestone 3 added stable notification formatting, native macOS and Telegram delivery, rate limits, quiet hours, and delivery auditing. Milestone 4 adds the user-level LaunchAgent with `install-service`, `service-status`, and `uninstall-service`.
+Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 added the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history. Milestone 3 added stable notification formatting, native macOS and Telegram delivery, rate limits, quiet hours, and delivery auditing. Milestone 4 added the user-level LaunchAgent with `install-service`, `service-status`, and `uninstall-service`. Milestone 5 adds incident inspection (`incidents list/show/bundle`), daily and weekly summaries, and the assistant integration contract.
 
-Current milestone: **Milestone 4 — LaunchAgent**.
+Current milestone: **Milestone 5 — assistant bridge**.
 
 ## Documentation
 
@@ -263,6 +279,7 @@ Current milestone: **Milestone 4 — LaunchAgent**.
 - [Configuration](docs/configuration.md) — local setup and defaults.
 - [Installation](docs/installation.md) — CLI and LaunchAgent plan.
 - [Release process](docs/release.md) — SemVer, tags, and GitHub releases.
+- [Assistant integration](docs/assistant.md) — how an assistant reads incidents and what it may do.
 - [Roadmap](docs/roadmap.md) — implementation milestones.
 - [Changelog](CHANGELOG.md) — notable changes by version.
 

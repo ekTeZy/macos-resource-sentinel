@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-25
+
+### Added
+
+- `mac-sentinel incidents list/show/bundle` for read-only incident inspection, with table, detail, and assistant-ready JSON output.
+- `mac-sentinel summary --period day|week` aggregating incidents by rule and severity.
+- Diagnostic bundle contract: incident snapshot, related audit events, open and recent incidents in one JSON document.
+- Assistant integration guide defining the read path, bundle schema, response style, and the Milestone 6 action protocol.
+
 ## [0.4.0] - 2026-11-25
 
 ### Added

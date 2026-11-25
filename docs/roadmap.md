@@ -56,6 +56,8 @@ Status: complete.
 
 ## Milestone 5 — assistant bridge
 
+Status: complete.
+
 - Incident list/show commands.
 - Diagnostic bundle command.
 - Compact incident JSON output.
