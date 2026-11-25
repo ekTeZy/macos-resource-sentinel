@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
@@ -18,6 +18,8 @@ class IncidentTransition:
     fingerprint: str
     severity: str
     message: str
+    rule: str = ""
+    data: dict[str, Any] = field(default_factory=dict)
 
 
 class IncidentManager:
@@ -118,6 +120,8 @@ class IncidentManager:
             fingerprint=signal.fingerprint,
             severity=signal.severity,
             message=signal.message,
+            rule=signal.rule,
+            data=incident,
         )
 
     def _resolve(
@@ -152,8 +156,10 @@ class IncidentManager:
             event_type="incident.resolved",
             incident_id=str(incident["incident_id"]),
             fingerprint=fingerprint,
-            severity="info",
+            severity=str(incident.get("severity", "info")),
             message=f"incident resolved: {signal.rule}",
+            rule=signal.rule,
+            data=incident,
         )
 
     def _append_event(

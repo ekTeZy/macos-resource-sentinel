@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from .collector import CollectionError, collect_once
 from .incidents import IncidentManager, IncidentTransition
+from .notifications import NotificationManager
 from .rules import RuleEngine
 from .storage import JsonlStore
 from .models import SystemSample
@@ -32,6 +33,7 @@ class MonitorRunner:
         self.output = output
         self.store = JsonlStore(state_dir)
         self.incidents = IncidentManager(self.store)
+        self.notifier = NotificationManager(config, state_dir=state_dir)
         self.rules = RuleEngine(config, interval_seconds=self.interval_seconds)
         self.history: deque[SystemSample] = deque(maxlen=self._history_capacity())
 
@@ -91,6 +93,9 @@ class MonitorRunner:
                         "confirmed signal suppressed by startup grace",
                         {"fingerprints": [signal.fingerprint for signal in active_signals]},
                     )
+
+                if transitions:
+                    self.notifier.process(transitions)
 
                 for transition in transitions:
                     print(
