@@ -275,11 +275,21 @@ class RuleEngine:
         return [entry for entry in entries if (latest - _timestamp(entry[0])).total_seconds() <= duration_seconds]
 
     def _has_coverage(self, samples: list[SystemSample], duration_seconds: int) -> bool:
+        if duration_seconds <= 0:
+            return True
         required = self._required_samples(duration_seconds)
-        return len(samples) >= required
+        if len(samples) < required:
+            return False
+        elapsed = (_timestamp(samples[-1]) - _timestamp(samples[0])).total_seconds()
+        return elapsed >= max(0, duration_seconds - self.interval_seconds)
 
     def _has_entry_coverage(self, entries: list[tuple[SystemSample, ProcessSample]], duration_seconds: int) -> bool:
-        return len(entries) >= self._required_samples(duration_seconds)
+        if duration_seconds <= 0:
+            return True
+        if len(entries) < self._required_samples(duration_seconds):
+            return False
+        elapsed = (_timestamp(entries[-1][0]) - _timestamp(entries[0][0])).total_seconds()
+        return elapsed >= max(0, duration_seconds - self.interval_seconds)
 
     def _required_samples(self, duration_seconds: int) -> int:
         return max(1, math.ceil((duration_seconds / self.interval_seconds) * 0.75))

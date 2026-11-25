@@ -62,6 +62,17 @@ def test_short_cpu_spike_does_not_become_active() -> None:
     assert signal_by_rule(signals, "cpu.aggregate").active is False
 
 
+def test_rule_requires_the_configured_time_span_not_only_sample_count() -> None:
+    config = fast_config()
+    config["rules"]["cpu"]["min_duration_seconds"] = 120
+    engine = RuleEngine(config, interval_seconds=5)
+    early = [make_sample(index * 5, cpu=90.0) for index in range(18)]
+    assert signal_by_rule(engine.evaluate(early), "cpu.aggregate").active is False
+
+    full_span = [make_sample(index * 5, cpu=90.0) for index in range(24)]
+    assert signal_by_rule(engine.evaluate(full_span), "cpu.aggregate").active is True
+
+
 def test_sustained_cpu_becomes_active_and_then_recovers() -> None:
     engine = RuleEngine(fast_config(), interval_seconds=1)
     hot = [make_sample(index, cpu=90.0) for index in range(4)]
