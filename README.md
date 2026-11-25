@@ -103,10 +103,12 @@ mac-sentinel summary --period day
 mac-sentinel summary --period week --json
 ```
 
-The following command is reserved for a later milestone and fails explicitly until implemented:
+Approved process actions (disabled by default, see below):
 
 ```bash
-mac-sentinel actions request INCIDENT_ID process.terminate
+mac-sentinel actions request INCIDENT_ID process.terminate --pid 4242
+mac-sentinel actions confirm ACT-20261125-165245-324561
+mac-sentinel actions list
 ```
 
 Foreground monitoring writes local incident history and state to:
@@ -115,6 +117,7 @@ Foreground monitoring writes local incident history and state to:
 ~/.local/state/macos-resource-sentinel/
 ├── events.jsonl
 ├── incidents.jsonl
+├── actions.jsonl
 ├── monitor.log
 ├── notification-state.json
 └── state.json
@@ -240,7 +243,20 @@ export MAC_SENTINEL_TELEGRAM_CHAT_ID="..."
 
 Anti-spam behavior is built in: per-incident cooldowns, an hourly delivery cap, optional quiet hours, and recovery messages that are sent only for critical incidents by default. Every delivery or suppression is written to the local audit history, and delivery state is kept in `notification-state.json`.
 
-Potentially disruptive actions are disabled by default. When enabled, the executor validates the process identity and requires an explicit confirmation before sending `SIGTERM`. Arbitrary shell commands and autonomous process termination are outside the action model.
+Potentially disruptive actions exist but are disabled by default. When enabled in the config, the executor supports a single constrained action — `SIGTERM` for a user-approved process:
+
+```bash
+# 1. Stage a termination request against a process from an incident
+mac-sentinel actions request INCIDENT_ID process.terminate --pid 4242
+
+# 2. Review and confirm within the TTL window
+mac-sentinel actions confirm ACT-20261125-165245-324561
+
+# 3. Inspect the audit history
+mac-sentinel actions list
+```
+
+Safety properties: protected names and system paths are refused, the PID is revalidated against its recorded identity before the signal (PID-reuse safe), confirmation expires after a short TTL, hourly request rate limits apply, and every step lands in the local audit log. Arbitrary shell commands, `sudo`, and autonomous termination are outside the action model.
 
 See the [security model](docs/security-model.md) for details.
 
@@ -266,9 +282,9 @@ Re-run `install-service` after upgrading the package so the plist points at the 
 
 ## Project status
 
-Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 added the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history. Milestone 3 added stable notification formatting, native macOS and Telegram delivery, rate limits, quiet hours, and delivery auditing. Milestone 4 added the user-level LaunchAgent with `install-service`, `service-status`, and `uninstall-service`. Milestone 5 adds incident inspection (`incidents list/show/bundle`), daily and weekly summaries, and the assistant integration contract.
+Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 added the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history. Milestone 3 added stable notification formatting, native macOS and Telegram delivery, rate limits, quiet hours, and delivery auditing. Milestone 4 added the user-level LaunchAgent with `install-service`, `service-status`, and `uninstall-service`. Milestone 5 added incident inspection (`incidents list/show/bundle`), daily and weekly summaries, and the assistant integration contract. Milestone 6 adds the constrained action executor with request/confirmation, PID revalidation, protected-process policy, and a full audit trail.
 
-Current milestone: **Milestone 5 — assistant bridge**.
+Current milestone: **Milestone 6 — constrained actions**.
 
 ## Documentation
 

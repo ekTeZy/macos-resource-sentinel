@@ -66,6 +66,8 @@ Status: complete.
 
 ## Milestone 6 — constrained actions
 
+Status: complete.
+
 - Action request model.
 - Action confirmation.
 - protected-process policy;

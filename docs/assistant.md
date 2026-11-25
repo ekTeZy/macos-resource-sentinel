@@ -64,22 +64,32 @@ answer from those facts: rule, thresholds, duration, observed value, process.
 - If the user asks to act on a process, see the action protocol below —
   do not improvise shell commands.
 
-## Action protocol (Milestone 6)
+## Action protocol
 
-Actions are not yet executable. Until `mac-sentinel actions` is implemented:
+The assistant may **explain**, **recommend**, and **coordinate** approved
+actions. It must never run `kill`, `killall`, `sudo`, or arbitrary shell
+against user processes itself — all terminations go through the executor.
 
-1. The assistant may **explain** and **recommend**.
-2. The assistant must **not** run `kill`, `killall`, `sudo`, or arbitrary
-   shell against user processes.
-3. When the user insists on termination, answer that confirmed `SIGTERM`
-   through the executor arrives with Milestone 6.
-
-Once implemented, the flow is:
+Flow when the user asks to stop a process:
 
 ```bash
+# 1. Identify the process from the incident bundle
+mac-sentinel incidents bundle INCIDENT_ID
+
+# 2. Stage the request; relay the printed confirmation line to the user
 mac-sentinel actions request INCIDENT_ID process.terminate --pid PID
-mac-sentinel actions confirm ACTION_ID
+
+# 3. Only after the user explicitly approves, confirm within the TTL
+mac-sentinel actions confirm ACT-XXXXXXXX-XXXXXX
 ```
 
-The executor validates the PID against the recorded process identity,
-checks protected names/paths, and requires explicit confirmation.
+Rules for the assistant:
+
+1. Always show the user the target line (`pid`, process name) before
+   confirming anything.
+2. Never confirm an action the user did not explicitly approve in the
+   current conversation.
+3. If confirmation fails with `identity changed`, explain that the PID was
+   reused and a fresh request is required.
+4. Protected refusals (`process name ... is protected`) are final — do not
+   retry with different arguments.

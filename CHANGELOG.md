@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-25
+
+### Added
+
+- `mac-sentinel actions request/confirm/list` implementing the constrained action model.
+- `SIGTERM` executor with protected names/paths policy, PID and start-time revalidation, confirmation TTL, and hourly request rate limits.
+- Append-only action audit log (`actions.jsonl`) recording every request, execution, refusal, expiry, and failure.
+- Assistant action protocol: explain and coordinate only, never run `kill`/`sudo` directly.
+
 ## [0.5.0] - 2026-11-25
 
 ### Added
