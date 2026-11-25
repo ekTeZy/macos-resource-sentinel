@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-25
+
+### Added
+
+- Stable notification message formatting for opened and resolved incidents.
+- Native macOS notification delivery through `osascript` without shell command
+  interpolation.
+- Telegram Bot API delivery with bounded retries.
+- Notification rate limits, quiet hours, recovery policy, and delivery audit
+  events.
+- Notification tests for formatting, policy, macOS delivery, and Telegram
+  retries.
+
 ## [0.2.0] - 2026-11-25
 
 ### Added
@@ -38,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LaunchAgent template and installation documentation.
 - Initial test suite.
 
-[Unreleased]: https://github.com/ektezy/macos-resource-sentinel/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ektezy/macos-resource-sentinel/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ektezy/macos-resource-sentinel/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ektezy/macos-resource-sentinel/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ektezy/macos-resource-sentinel/releases/tag/v0.1.0
