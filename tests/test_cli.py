@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from macos_resource_sentinel.cli import EXIT_NOT_IMPLEMENTED, EXIT_OK, main
+from macos_resource_sentinel.cli import EXIT_OK, main
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,8 +62,32 @@ def test_monitor_validate_config(capsys) -> None:
     assert "configuration is valid" in capsys.readouterr().out
 
 
-def test_monitor_loop_is_explicitly_not_implemented(capsys) -> None:
-    exit_code = main(["--config", str(EXAMPLE_CONFIG), "monitor"])
+def test_monitor_can_collect_one_sample_and_write_events(tmp_path, capsys) -> None:
+    config_path = tmp_path / "config.toml"
+    state_dir = tmp_path / "state"
+    config_path.write_text(
+        f'''
+schema_version = 1
 
-    assert exit_code == EXIT_NOT_IMPLEMENTED
-    assert "Milestone 2" in capsys.readouterr().err
+[sampling]
+interval_seconds = 1
+startup_grace_seconds = 60
+
+[storage]
+state_dir = "{state_dir}"
+'''.strip(),
+        encoding="utf-8",
+    )
+
+    exit_code = main([
+        "--config",
+        str(config_path),
+        "monitor",
+        "--max-samples",
+        "1",
+    ])
+
+    assert exit_code == EXIT_OK
+    assert "monitor stopped after 1 sample" in capsys.readouterr().out
+    events = [json.loads(line) for line in (state_dir / "events.jsonl").read_text().splitlines()]
+    assert [event["event_type"] for event in events] == ["monitor.started", "monitor.stopped"]
