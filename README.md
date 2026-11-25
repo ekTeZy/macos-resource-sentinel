@@ -1,42 +1,182 @@
 # macOS Resource Sentinel
 
-`macos-resource-sentinel` is a local monitoring agent for macOS. It watches sustained CPU, memory, swap, load, and disk problems, suppresses short-lived spikes, records structured incidents, and provides a safe handoff for diagnostics and user-approved actions.
+A local monitoring agent for macOS that watches for **sustained resource problems**, not harmless two-second spikes.
 
-The project is designed around a clear boundary:
+It tracks CPU, memory pressure, swap growth, load average, and disk capacity. When a problem persists long enough to matter, it creates a structured incident, sends a compact notification, and can hand the incident to a local assistant for diagnostics and user-approved actions.
 
-- deterministic local monitoring decides **whether something is an incident**;
-- stable notification templates explain **what happened**;
-- an AI assistant such as a locally deployed OpenClaw-compatible agent can explain **why it may have happened** and request a constrained follow-up action;
-- a small local executor performs only explicitly allowed and confirmed operations.
+## What it does
 
-## Goals
+- Samples system metrics every few seconds.
+- Ignores short-lived CPU spikes and other noisy measurements.
+- Opens an incident only after a threshold has held for a configured duration.
+- Groups related findings into one notification instead of sending several alerts for the same problem.
+- Identifies the processes most likely responsible for the incident.
+- Stores local machine-readable history for later inspection.
+- Supports safe, explicit follow-up actions such as diagnostics and confirmed `SIGTERM`.
 
-- Avoid notifications for two- or three-second resource spikes.
-- Keep the monitoring path deterministic and inexpensive.
-- Preserve machine-readable incident history for later analysis.
-- Keep credentials and personal configuration out of the repository.
-- Make every process action explicit, auditable, and reversible where possible.
+## How it works
 
-## Non-goals
+```text
+metrics → rules → incident state → notification → optional assistant diagnostics
+```
 
-- Continuous AI polling of system metrics.
-- Autonomous termination of arbitrary processes.
-- Remote control of a Mac by an untrusted cloud service.
-- A replacement for full observability platforms.
+The monitoring path is deterministic:
 
-## Current status
+1. **Collector** reads CPU, memory, swap, load, disk, and process data.
+2. **Rule Engine** checks thresholds, durations, recovery values, and exclusions.
+3. **Incident Manager** applies startup grace, cooldowns, grouping, and recovery.
+4. **Notifier** sends one stable message for a confirmed incident.
+5. **Assistant Bridge** can inspect the incident and suggest a next step.
+6. **Action Executor** performs only allowlisted operations after confirmation.
 
-This repository currently contains the architecture and product specification. The first implementation milestone is tracked in [`docs/roadmap.md`](docs/roadmap.md).
+Short spike:
+
+```text
+CPU: 97% for 4 seconds → no notification
+```
+
+Sustained problem:
+
+```text
+CPU: 85%+ for 3 minutes → incident opened → one notification
+```
+
+## Example notification
+
+```text
+MacBook: sustained CPU usage
+
+Average for 3 minutes: 91%
+Primary process: node — 184% CPU, 2.4 GB RAM
+Additional signal: swap grew by 780 MB
+Duration: 03:20
+Incident: INC-20261125-0007
+
+Available actions:
+1. Inspect the incident
+2. Request process termination
+3. Snooze this process for 30 minutes
+```
+
+The exact template will be implemented by the notifier, but the format is intentionally stable and machine-generated.
+
+## Planned CLI
+
+The target command is `mac-sentinel`:
+
+```bash
+# Check the local environment and configuration
+mac-sentinel doctor
+
+# Print one system sample
+mac-sentinel collect --once
+
+# Run the monitor in the foreground
+mac-sentinel monitor
+
+# Show recorded incidents
+mac-sentinel incidents list
+mac-sentinel incidents show INCIDENT_ID
+
+# Install or remove the LaunchAgent
+mac-sentinel install-service
+mac-sentinel uninstall-service
+```
+
+These commands describe the planned interface. The implementation starts with Milestone 1 in the [roadmap](docs/roadmap.md).
+
+## Configuration
+
+The public example configuration lives at:
+
+```text
+config/example.toml
+```
+
+A local copy should be placed at:
+
+```text
+~/.config/macos-resource-sentinel/config.toml
+```
+
+Basic setup:
+
+```bash
+mkdir -p ~/.config/macos-resource-sentinel
+cp config/example.toml ~/.config/macos-resource-sentinel/config.toml
+chmod 600 ~/.config/macos-resource-sentinel/config.toml
+```
+
+Example CPU rule:
+
+```toml
+[rules.cpu]
+enabled = true
+trigger_percent = 85
+recover_percent = 65
+min_duration_seconds = 180
+recovery_duration_seconds = 120
+cooldown_minutes = 30
+```
+
+This means:
+
+- CPU must stay above 85% for three minutes before an incident opens;
+- CPU must fall below 65% for two minutes before the incident resolves;
+- the same problem is not reported again for at least thirty minutes.
+
+## Notifications and actions
+
+The first planned notification channels are:
+
+- native macOS notifications;
+- Telegram Bot API.
+
+Notification credentials stay outside the repository and are referenced through environment variables:
+
+```toml
+[notifications.telegram]
+enabled = true
+bot_token_ref = "env:MAC_SENTINEL_TELEGRAM_BOT_TOKEN"
+chat_id_ref = "env:MAC_SENTINEL_TELEGRAM_CHAT_ID"
+```
+
+Potentially disruptive actions are disabled by default. When enabled, the executor validates the process identity and requires an explicit confirmation before sending `SIGTERM`. Arbitrary shell commands and autonomous process termination are outside the action model.
+
+See the [security model](docs/security-model.md) for details.
+
+## Running as a background service
+
+The planned service mode uses a user-level macOS LaunchAgent:
+
+```bash
+mac-sentinel install-service
+mac-sentinel uninstall-service
+```
+
+A generic plist template is available at:
+
+```text
+launchd/com.macos-resource-sentinel.plist.template
+```
+
+The installer will render local paths and state locations at installation time.
+
+## Project status
+
+The repository is currently in the specification phase. Architecture, alert behavior, event formats, security boundaries, configuration, installation, and the implementation roadmap are documented before code is added.
+
+Current milestone: **Milestone 0 — specification**.
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Alert rules and incident lifecycle](docs/alert-rules.md)
-- [Event schema](docs/event-schema.md)
-- [Security model](docs/security-model.md)
-- [Configuration](docs/configuration.md)
-- [Installation plan](docs/installation.md)
-- [Roadmap](docs/roadmap.md)
+- [Architecture](docs/architecture.md) — components and data flow.
+- [Alert rules](docs/alert-rules.md) — thresholds, lifecycle, grouping, and cooldowns.
+- [Event schema](docs/event-schema.md) — incident and action records.
+- [Security model](docs/security-model.md) — confirmation, allowlists, and audit policy.
+- [Configuration](docs/configuration.md) — local setup and defaults.
+- [Installation](docs/installation.md) — CLI and LaunchAgent plan.
+- [Roadmap](docs/roadmap.md) — implementation milestones.
 
 ## License
 
