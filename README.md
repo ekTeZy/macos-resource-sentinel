@@ -1,15 +1,19 @@
 # macOS Resource Sentinel
 
+[![CI](https://github.com/ektezy/macos-resource-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/ektezy/macos-resource-sentinel/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ektezy/macos-resource-sentinel)](https://github.com/ektezy/macos-resource-sentinel/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A local monitoring agent for macOS that watches for **sustained resource problems**, not harmless two-second spikes.
 
-It tracks CPU, memory pressure, swap growth, load average, and disk capacity. When a problem persists long enough to matter, it creates a structured incident, sends a compact notification, and can hand the incident to a local assistant for diagnostics and user-approved actions.
+It tracks CPU, memory pressure, swap growth, load average, and disk capacity. When a problem persists long enough to matter, it creates a structured incident and stores local evidence. Notification channels, assistant diagnostics, and user-approved actions are staged in the following milestones.
 
 ## What it does
 
 - Samples system metrics every few seconds.
 - Ignores short-lived CPU spikes and other noisy measurements.
 - Opens an incident only after a threshold has held for a configured duration.
-- Groups related findings into one notification instead of sending several alerts for the same problem.
+- Keeps related evidence in a structured incident record; notification grouping is planned with the notifier.
 - Identifies the processes most likely responsible for the incident.
 - Stores local machine-readable history for later inspection.
 - Supports safe, explicit follow-up actions such as diagnostics and confirmed `SIGTERM`.
@@ -99,15 +103,40 @@ Foreground monitoring writes local incident history and state to:
 └── state.json
 ```
 
-## Development installation
+## User installation
 
-Python 3.11 or newer is required:
+Python 3.11 or newer is required. The recommended user-level installer is
+[`pipx`](https://pipx.pypa.io/):
+
+```bash
+brew install pipx
+pipx ensurepath
+pipx install git+https://github.com/ektezy/macos-resource-sentinel.git
+mac-sentinel doctor
+```
+
+After a tagged release is published, install that release explicitly:
+
+```bash
+pipx install git+https://github.com/ektezy/macos-resource-sentinel.git@v0.2.0
+```
+
+Upgrade or remove:
+
+```bash
+pipx upgrade macos-resource-sentinel
+pipx uninstall macos-resource-sentinel
+```
+
+## Development installation
 
 ```bash
 git clone https://github.com/ektezy/macos-resource-sentinel.git
 cd macos-resource-sentinel
-python3 -m pip install --user -e '.[dev]'
-mac-sentinel doctor
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+python -m pytest -q
 ```
 
 For local development without installing the package:
@@ -209,7 +238,15 @@ Current milestone: **Milestone 2 — deterministic monitoring**.
 - [Security model](docs/security-model.md) — confirmation, allowlists, and audit policy.
 - [Configuration](docs/configuration.md) — local setup and defaults.
 - [Installation](docs/installation.md) — CLI and LaunchAgent plan.
+- [Release process](docs/release.md) — SemVer, tags, and GitHub releases.
 - [Roadmap](docs/roadmap.md) — implementation milestones.
+- [Changelog](CHANGELOG.md) — notable changes by version.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, commit style,
+testing expectations, and safety rules. Security reports are described in
+[SECURITY.md](SECURITY.md).
 
 ## License
 

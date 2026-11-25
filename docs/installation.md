@@ -21,16 +21,41 @@ mac-sentinel install-service
 mac-sentinel uninstall-service
 ```
 
-## Current development setup
+## User-level CLI setup
 
-Python 3.11 or newer is required.
+Python 3.11 or newer is required. `pipx` keeps the command available globally
+without mixing project dependencies into the system Python environment:
 
 ```bash
-python3 -m pip install --user -e '.[dev]'
+brew install pipx
+pipx ensurepath
+pipx install git+https://github.com/ektezy/macos-resource-sentinel.git
 mac-sentinel --version
 mac-sentinel doctor
 mac-sentinel collect --once --pretty
 mac-sentinel monitor --max-samples 1
+```
+
+For a local checkout:
+
+```bash
+cd /path/to/macos-resource-sentinel
+pipx install . --force
+```
+
+Upgrade after pulling changes:
+
+```bash
+pipx reinstall macos-resource-sentinel
+```
+
+## Development setup
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+python -m pytest -q
 ```
 
 For a checkout without installing the console script:
