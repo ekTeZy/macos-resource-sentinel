@@ -1,0 +1,96 @@
+schema_version = 1
+
+[sampling]
+interval_seconds = 5
+startup_grace_seconds = 120
+retain_samples_hours = 24
+
+[storage]
+state_dir = "~/.local/state/macos-resource-sentinel"
+incident_retention_days = 180
+action_retention_days = 365
+
+[rules.cpu]
+enabled = true
+trigger_percent = 85
+recover_percent = 65
+min_duration_seconds = 180
+recovery_duration_seconds = 120
+cooldown_minutes = 30
+
+[rules.process_cpu]
+enabled = true
+trigger_percent = 70
+recover_percent = 40
+min_duration_seconds = 120
+recovery_duration_seconds = 120
+cooldown_minutes = 30
+ignored_names = []
+
+[rules.load_average]
+enabled = true
+trigger_multiplier = 1.5
+recovery_multiplier = 1.0
+min_duration_seconds = 600
+cooldown_minutes = 60
+
+[rules.memory_pressure]
+enabled = true
+min_duration_seconds = 120
+recovery_duration_seconds = 180
+cooldown_minutes = 30
+
+[rules.swap]
+enabled = true
+minimum_used_mib = 2048
+growth_mib = 512
+growth_window_seconds = 600
+cooldown_minutes = 60
+
+[rules.disk]
+enabled = true
+warning_free_percent = 15
+critical_free_percent = 8
+warning_recovery_percent = 20
+critical_recovery_percent = 12
+paths = ["/"]
+
+[notifications]
+enabled = true
+channels = ["macos"]
+max_per_hour = 4
+default_cooldown_minutes = 30
+send_warning_recovery = false
+send_critical_recovery = true
+quiet_hours_enabled = false
+quiet_hours_start = "23:00"
+quiet_hours_end = "08:00"
+
+[notifications.telegram]
+enabled = false
+bot_token_ref = "env:MAC_SENTINEL_TELEGRAM_BOT_TOKEN"
+chat_id_ref = "env:MAC_SENTINEL_TELEGRAM_CHAT_ID"
+
+[assistant]
+enabled = false
+bridge_mode = "cli"
+incident_spool = "~/.local/state/macos-resource-sentinel/spool"
+
+[actions]
+enabled = false
+require_confirmation = true
+confirmation_ttl_seconds = 120
+max_termination_requests_per_hour = 3
+allowed_actions = ["incident.inspect", "process.terminate", "process.verify-exit"]
+protected_names = [
+  "kernel_task",
+  "launchd",
+  "WindowServer",
+  "loginwindow",
+  "SecurityAgent"
+]
+protected_paths = [
+  "/System/",
+  "/usr/libexec/",
+  "/sbin/"
+]
