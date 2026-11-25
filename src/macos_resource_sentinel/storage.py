@@ -19,6 +19,7 @@ class JsonlStore:
         self.state_dir = state_dir
         self.events_path = state_dir / "events.jsonl"
         self.incidents_path = state_dir / "incidents.jsonl"
+        self.actions_path = state_dir / "actions.jsonl"
         self.state_path = state_dir / "state.json"
         self.log_path = state_dir / "monitor.log"
 
@@ -34,6 +35,9 @@ class JsonlStore:
 
     def append_incident(self, record: dict[str, Any]) -> None:
         self._append_jsonl(self.incidents_path, record)
+
+    def append_action(self, record: dict[str, Any]) -> None:
+        self._append_jsonl(self.actions_path, record)
 
     def load_state(self) -> dict[str, Any]:
         if not self.state_path.exists():

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Sequence, TextIO
 
 from . import __version__
+from .actions import ActionError, confirm_action, list_actions, request_termination
 from .collector import CollectionError, collect_once
 from .config import ConfigError, load_config, state_dir
 from .doctor import DoctorReport, run_doctor
@@ -35,7 +36,6 @@ from .storage import StorageError
 
 EXIT_OK = 0
 EXIT_ERROR = 1
-EXIT_NOT_IMPLEMENTED = 2
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -144,9 +144,30 @@ def build_parser() -> argparse.ArgumentParser:
 
     actions_parser = subparsers.add_parser(
         "actions",
-        help="request or confirm constrained actions (planned)",
+        help="request or confirm constrained actions",
     )
-    actions_parser.add_argument("action_command", nargs="?", help="request or confirm")
+    actions_sub = actions_parser.add_subparsers(dest="action_command", required=True)
+
+    actions_request = actions_sub.add_parser(
+        "request",
+        help="stage a process.terminate request (requires confirmation)",
+    )
+    actions_request.add_argument("incident_id", help="incident to attach the action to")
+    actions_request.add_argument(
+        "action_type",
+        choices=["process.terminate"],
+        help="action type; only SIGTERM termination is implemented",
+    )
+    actions_request.add_argument("--pid", type=int, required=True, help="target process id")
+
+    actions_confirm = actions_sub.add_parser(
+        "confirm",
+        help="confirm and execute a pending action",
+    )
+    actions_confirm.add_argument("action_id", help="identifier from the request step")
+
+    actions_list = actions_sub.add_parser("list", help="show the action audit history")
+    actions_list.add_argument("--limit", type=int, default=20, help="maximum rows (default: 20)")
 
     subparsers.add_parser(
         "install-service",
@@ -186,14 +207,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "summary":
             return _cmd_summary(args)
         if args.command == "actions":
-            return _cmd_planned(args.command)
+            return _cmd_actions(args)
     except ConfigError as exc:
         print(f"configuration error: {exc}", file=sys.stderr)
         return EXIT_ERROR
     except CollectionError as exc:
         print(f"collection error: {exc}", file=sys.stderr)
         return EXIT_ERROR
-    except (StorageError, ServiceError, IncidentReportError, ValueError) as exc:
+    except (StorageError, ServiceError, IncidentReportError, ActionError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_ERROR
     except KeyboardInterrupt:
@@ -372,9 +393,48 @@ def _print_incident_detail(record: Any) -> None:
     print("\nuse 'mac-sentinel incidents bundle INCIDENT_ID' for the assistant-ready JSON")
 
 
-def _cmd_planned(command: str) -> int:
-    print(f"'{command}' is planned for a later milestone", file=sys.stderr)
-    return EXIT_NOT_IMPLEMENTED
+def _cmd_actions(args: argparse.Namespace) -> int:
+    loaded = load_config(args.config, require_file=True)
+    store = JsonlStore(state_dir(loaded.data))
+
+    if args.action_command == "request":
+        record = request_termination(
+            store,
+            loaded.data,
+            incident_id=args.incident_id,
+            pid=args.pid,
+        )
+        identity = record.process
+        name = identity.name if identity else "?"
+        print(f"action staged: {record.action_id}")
+        print(f"target: pid {args.pid} ({name}) — expires at {record.expires_at:%H:%M:%S}Z")
+        print("execute with:")
+        print(f"  mac-sentinel actions confirm {record.action_id}")
+        return EXIT_OK
+
+    if args.action_command == "confirm":
+        record = confirm_action(store, loaded.data, args.action_id)
+        print(f"{record.action_id}: {record.state}")
+        for entry in record.audit:
+            print(f"  {entry['at'][:19]}Z {entry['event']}: {entry['detail']}")
+        return EXIT_OK
+
+    if args.action_command == "list":
+        records = list_actions(store, limit=args.limit)
+        if not records:
+            print("no actions recorded")
+            return EXIT_OK
+        for record in records:
+            target = ""
+            if record.process:
+                target = f" pid {record.process.pid} ({record.process.name})"
+            print(
+                f"{record.action_id}  {record.state:<9} {record.action:<20}"
+                f"{record.requested_at:%Y-%m-%d %H:%M}Z{target}"
+            )
+        return EXIT_OK
+
+    raise ValueError(f"unknown actions command: {args.action_command}")
 
 
 def _print_warnings(warnings: list[str], stream: TextIO) -> None:
