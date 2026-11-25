@@ -6,7 +6,7 @@
 
 A local monitoring agent for macOS that watches for **sustained resource problems**, not harmless two-second spikes.
 
-It tracks CPU, memory pressure, swap growth, load average, and disk capacity. When a problem persists long enough to matter, it creates a structured incident and stores local evidence. Notification channels, assistant diagnostics, and user-approved actions are staged in the following milestones.
+It tracks CPU, memory pressure, swap growth, load average, and disk capacity. When a problem persists long enough to matter, it creates a structured incident, stores local evidence, and sends a stable notification through macOS or Telegram. Assistant diagnostics and user-approved actions are staged in the following milestones.
 
 ## What it does
 
@@ -16,7 +16,8 @@ It tracks CPU, memory pressure, swap growth, load average, and disk capacity. Wh
 - Keeps related evidence in a structured incident record; notification grouping is planned with the notifier.
 - Identifies the processes most likely responsible for the incident.
 - Stores local machine-readable history for later inspection.
-- Supports safe, explicit follow-up actions such as diagnostics and confirmed `SIGTERM`.
+- Sends deterministic incident notifications with cooldowns, quiet hours, and rate limits.
+- Will support safe, explicit follow-up actions such as diagnostics and confirmed `SIGTERM`.
 
 ## How it works
 
@@ -62,7 +63,7 @@ Available actions:
 3. Snooze this process for 30 minutes
 ```
 
-The exact template will be implemented by the notifier, but the format is intentionally stable and machine-generated.
+The template is stable and machine-generated, so automated tooling and an assistant can rely on its structure. The action list is shown only when actions are enabled locally.
 
 ## CLI quick start
 
@@ -100,6 +101,8 @@ Foreground monitoring writes local incident history and state to:
 ~/.local/state/macos-resource-sentinel/
 ├── events.jsonl
 ├── incidents.jsonl
+├── monitor.log
+├── notification-state.json
 └── state.json
 ```
 
@@ -189,19 +192,39 @@ This means:
 
 ## Notifications and actions
 
-The first planned notification channels are:
+Two notification channels are supported:
 
 - native macOS notifications;
 - Telegram Bot API.
 
-Notification credentials stay outside the repository and are referenced through environment variables:
+Native macOS delivery works out of the box:
 
 ```toml
+[notifications]
+enabled = true
+channels = ["macos"]
+max_per_hour = 4
+quiet_hours_enabled = false
+```
+
+For Telegram, create a bot with [@BotFather](https://t.me/BotFather), get your chat ID, and reference the credentials through environment variables — never as literals in the config file:
+
+```toml
+[notifications]
+channels = ["macos", "telegram"]
+
 [notifications.telegram]
 enabled = true
 bot_token_ref = "env:MAC_SENTINEL_TELEGRAM_BOT_TOKEN"
 chat_id_ref = "env:MAC_SENTINEL_TELEGRAM_CHAT_ID"
 ```
+
+```bash
+export MAC_SENTINEL_TELEGRAM_BOT_TOKEN="..."
+export MAC_SENTINEL_TELEGRAM_CHAT_ID="..."
+```
+
+Anti-spam behavior is built in: per-incident cooldowns, an hourly delivery cap, optional quiet hours, and recovery messages that are sent only for critical incidents by default. Every delivery or suppression is written to the local audit history, and delivery state is kept in `notification-state.json`.
 
 Potentially disruptive actions are disabled by default. When enabled, the executor validates the process identity and requires an explicit confirmation before sending `SIGTERM`. Arbitrary shell commands and autonomous process termination are outside the action model.
 
@@ -226,9 +249,9 @@ The installer will render local paths and state locations at installation time.
 
 ## Project status
 
-Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 adds the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history.
+Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 added the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history. Milestone 3 adds stable notification formatting, native macOS and Telegram delivery, rate limits, quiet hours, and delivery auditing.
 
-Current milestone: **Milestone 2 — deterministic monitoring**.
+Current milestone: **Milestone 3 — notifications**.
 
 ## Documentation
 

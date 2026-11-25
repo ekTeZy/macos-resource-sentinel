@@ -25,7 +25,7 @@ Status: complete.
 
 ## Milestone 2 — deterministic monitoring
 
-Status: in progress.
+Status: complete.
 
 - Continuous monitor loop.
 - Rule engine.
@@ -35,6 +35,8 @@ Status: in progress.
 - Foreground logging.
 
 ## Milestone 3 — notifications
+
+Status: complete.
 
 - Stable text templates.
 - Native macOS notification channel.

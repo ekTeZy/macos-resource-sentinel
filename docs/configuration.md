@@ -85,12 +85,23 @@ Additional volumes can be added, but network mounts should usually be handled se
 
 ```toml
 [notifications]
+enabled = true
 channels = ["macos"]
 max_per_hour = 4
 default_cooldown_minutes = 30
+send_warning_recovery = false
+send_critical_recovery = true
+quiet_hours_enabled = false
+quiet_hours_start = "23:00"
+quiet_hours_end = "08:00"
+
+[notifications.telegram]
+enabled = false
+bot_token_ref = "env:MAC_SENTINEL_TELEGRAM_BOT_TOKEN"
+chat_id_ref = "env:MAC_SENTINEL_TELEGRAM_CHAT_ID"
 ```
 
-The first local setup can use native macOS notifications before any external channel is configured.
+The first local setup can use native macOS notifications before any external channel is configured. Telegram credentials are referenced through environment variables or the macOS Keychain (`keychain:<service>`), never stored as literals. Delivery state and rate-limit counters are kept in `notification-state.json` inside the state directory.
 
 ### Actions
 
