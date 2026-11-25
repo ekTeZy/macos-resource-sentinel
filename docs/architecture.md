@@ -61,7 +61,7 @@ Planned inputs:
 - aggregate CPU utilization;
 - per-process CPU and RSS;
 - load average and CPU count;
-- memory pressure where available;
+- memory pressure through `kern.memorystatus_vm_pressure_level` on macOS;
 - virtual memory and swap;
 - mounted filesystem capacity;
 - power source and battery state where useful;

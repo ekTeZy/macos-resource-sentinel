@@ -14,7 +14,7 @@ Status: complete.
 
 ## Milestone 1 — local collector and CLI
 
-Status: in progress.
+Status: complete.
 
 - Python package with a `src` layout.
 - `mac-sentinel collect --once`.
@@ -24,6 +24,8 @@ Status: in progress.
 - Unit tests for normalization and validation.
 
 ## Milestone 2 — deterministic monitoring
+
+Status: in progress.
 
 - Continuous monitor loop.
 - Rule engine.

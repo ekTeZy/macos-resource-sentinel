@@ -73,16 +73,30 @@ mac-sentinel collect --once --pretty
 
 # Validate a configuration file without starting the monitor
 mac-sentinel monitor --validate-config
+
+# Run the deterministic monitor in the foreground
+mac-sentinel monitor
+
+# Collect a limited number of samples and exit
+mac-sentinel monitor --max-samples 3
 ```
 
 The following commands are reserved for later milestones and fail explicitly until implemented:
 
 ```bash
-mac-sentinel monitor
 mac-sentinel incidents list
 mac-sentinel incidents show INCIDENT_ID
 mac-sentinel install-service
 mac-sentinel uninstall-service
+```
+
+Foreground monitoring writes local incident history and state to:
+
+```text
+~/.local/state/macos-resource-sentinel/
+├── events.jsonl
+├── incidents.jsonl
+└── state.json
 ```
 
 ## Development installation
@@ -183,9 +197,9 @@ The installer will render local paths and state locations at installation time.
 
 ## Project status
 
-Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 adds the Python package, configuration validation, `doctor`, and `collect --once`.
+Architecture, alert behavior, event formats, security boundaries, configuration, and installation are documented. Milestone 1 added the Python package, configuration validation, `doctor`, and `collect --once`. Milestone 2 adds the foreground monitor loop, rolling rules, incident state, cooldowns, macOS memory pressure, and JSONL history.
 
-Current milestone: **Milestone 1 — local collector and CLI**.
+Current milestone: **Milestone 2 — deterministic monitoring**.
 
 ## Documentation
 

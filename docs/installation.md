@@ -30,6 +30,7 @@ python3 -m pip install --user -e '.[dev]'
 mac-sentinel --version
 mac-sentinel doctor
 mac-sentinel collect --once --pretty
+mac-sentinel monitor --max-samples 1
 ```
 
 For a checkout without installing the console script:
