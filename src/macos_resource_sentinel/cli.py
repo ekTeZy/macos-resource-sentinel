@@ -12,7 +12,16 @@ from . import __version__
 from .collector import CollectionError, collect_once
 from .config import ConfigError, load_config, state_dir
 from .doctor import DoctorReport, run_doctor
+from .incident_report import (
+    IncidentQuery,
+    IncidentReportError,
+    build_diagnostic_bundle,
+    find_incident,
+    query_incidents,
+    summarize,
+)
 from .monitor import MonitorRunner
+from .storage import JsonlStore
 from .service import (
     ServiceError,
     build_plan,
@@ -106,9 +115,32 @@ def build_parser() -> argparse.ArgumentParser:
 
     incidents_parser = subparsers.add_parser(
         "incidents",
-        help="inspect recorded incidents (planned)",
+        help="inspect recorded incidents",
     )
-    incidents_parser.add_argument("incident_command", nargs="?", help="list or show")
+    incidents_sub = incidents_parser.add_subparsers(dest="incident_command", required=True)
+
+    incidents_list = incidents_sub.add_parser("list", help="list incidents, newest first")
+    incidents_list.add_argument("--state", help="filter by state (firing or resolved)")
+    incidents_list.add_argument("--fingerprint", help="filter by rule fingerprint")
+    incidents_list.add_argument("--limit", type=int, default=20, help="maximum rows (default: 20)")
+    incidents_list.add_argument("--json", action="store_true", help="print a JSON array")
+
+    incidents_show = incidents_sub.add_parser("show", help="show one incident in detail")
+    incidents_show.add_argument("incident_id", help="incident identifier, e.g. INC-20261125-0001")
+    incidents_show.add_argument("--json", action="store_true", help="print the incident as JSON")
+
+    incidents_bundle = incidents_sub.add_parser(
+        "bundle",
+        help="print a diagnostic bundle for an assistant",
+    )
+    incidents_bundle.add_argument("incident_id", help="incident identifier")
+
+    summary_parser = subparsers.add_parser(
+        "summary",
+        help="aggregate incident history for a period",
+    )
+    summary_parser.add_argument("--period", choices=["day", "week"], default="day")
+    summary_parser.add_argument("--json", action="store_true", help="print the summary as JSON")
 
     actions_parser = subparsers.add_parser(
         "actions",
@@ -149,7 +181,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _cmd_uninstall_service(args)
         if args.command == "service-status":
             return _cmd_service_status(args)
-        if args.command in {"incidents", "actions"}:
+        if args.command == "incidents":
+            return _cmd_incidents(args)
+        if args.command == "summary":
+            return _cmd_summary(args)
+        if args.command == "actions":
             return _cmd_planned(args.command)
     except ConfigError as exc:
         print(f"configuration error: {exc}", file=sys.stderr)
@@ -157,7 +193,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except CollectionError as exc:
         print(f"collection error: {exc}", file=sys.stderr)
         return EXIT_ERROR
-    except (StorageError, ServiceError, ValueError) as exc:
+    except (StorageError, ServiceError, IncidentReportError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_ERROR
     except KeyboardInterrupt:
@@ -255,6 +291,85 @@ def _default_config_path() -> Path:
     from .config import DEFAULT_CONFIG_PATH
 
     return DEFAULT_CONFIG_PATH
+
+
+def _cmd_incidents(args: argparse.Namespace) -> int:
+    loaded = load_config(args.config)
+    store = JsonlStore(state_dir(loaded.data))
+
+    if args.incident_command == "list":
+        query = IncidentQuery(
+            state=args.state,
+            fingerprint=args.fingerprint,
+            limit=args.limit,
+        )
+        records = query_incidents(store, query)
+        if args.json:
+            print(json.dumps([record.to_dict() for record in records], ensure_ascii=False, indent=2))
+        else:
+            _print_incident_table(records)
+        return EXIT_OK
+
+    if args.incident_command == "show":
+        record = find_incident(store, args.incident_id)
+        if args.json:
+            print(json.dumps(record.to_dict(), ensure_ascii=False, indent=2))
+        else:
+            _print_incident_detail(record)
+        return EXIT_OK
+
+    if args.incident_command == "bundle":
+        bundle = build_diagnostic_bundle(store, args.incident_id)
+        print(json.dumps(bundle, ensure_ascii=False, indent=2))
+        return EXIT_OK
+
+    raise ValueError(f"unknown incidents command: {args.incident_command}")
+
+
+def _cmd_summary(args: argparse.Namespace) -> int:
+    loaded = load_config(args.config)
+    store = JsonlStore(state_dir(loaded.data))
+    report = summarize(store, period=args.period)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    else:
+        print(f"summary for the last {args.period} (since {report['window_start']})")
+        print(f"total incidents: {report['total_incidents']} (open: {report['open_incidents']})")
+        for rule, count in report["by_rule"].items():
+            print(f"  {rule}: {count}")
+    return EXIT_OK
+
+
+def _print_incident_table(records: list[Any]) -> None:
+    if not records:
+        print("no incidents recorded")
+        return
+    header = f"{'INCIDENT':<22} {'STATE':<9} {'SEVERITY':<9} {'RULE':<18} OPENED"
+    print(header)
+    print("-" * len(header))
+    for record in records:
+        print(
+            f"{record.incident_id:<22} {record.state:<9} {record.severity:<9} "
+            f"{record.rule:<18} {record.opened_at:%Y-%m-%d %H:%M}Z"
+        )
+
+
+def _print_incident_detail(record: Any) -> None:
+    print(f"incident:  {record.incident_id}")
+    print(f"rule:      {record.rule}")
+    print(f"state:     {record.state}")
+    print(f"severity:  {record.severity}")
+    print(f"message:   {record.message}")
+    print(f"opened:    {record.opened_at:%Y-%m-%d %H:%M:%S}Z")
+    if record.resolved_at:
+        print(f"resolved:  {record.resolved_at:%Y-%m-%d %H:%M:%S}Z")
+    if record.process:
+        name = record.process.get("name", "?")
+        pid = record.process.get("pid", "?")
+        cpu = record.process.get("cpu_percent")
+        cpu_text = f"{cpu:.0f}% CPU" if isinstance(cpu, (int, float)) else ""
+        print(f"process:   {name} (pid {pid}) {cpu_text}".rstrip())
+    print("\nuse 'mac-sentinel incidents bundle INCIDENT_ID' for the assistant-ready JSON")
 
 
 def _cmd_planned(command: str) -> int:
