@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macos-resource-sentinel"
+version = "0.1.0"
+description = "Local macOS resource incident monitor with safe assistant handoff"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+  {name = "ektezy"}
+]
+keywords = ["macos", "monitoring", "cpu", "memory", "disk", "cli"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: MacOS X",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: System :: Monitoring",
+  "Topic :: Utilities"
+]
+dependencies = [
+  "psutil>=5.9,<8"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0,<10"
+]
+
+[project.scripts]
+mac-sentinel = "macos_resource_sentinel.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ektezy/macos-resource-sentinel"
+Repository = "https://github.com/ektezy/macos-resource-sentinel"
+Issues = "https://github.com/ektezy/macos-resource-sentinel/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
