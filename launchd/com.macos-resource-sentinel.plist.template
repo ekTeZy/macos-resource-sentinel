@@ -11,6 +11,10 @@
     <string>__CONFIG__</string>
     <string>monitor</string>
   </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- Populated by `mac-sentinel install-service` from MAC_SENTINEL_* variables. -->
+  </dict>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>

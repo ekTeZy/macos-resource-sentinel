@@ -13,6 +13,14 @@ from .collector import CollectionError, collect_once
 from .config import ConfigError, load_config, state_dir
 from .doctor import DoctorReport, run_doctor
 from .monitor import MonitorRunner
+from .service import (
+    ServiceError,
+    build_plan,
+    config_permission_warnings,
+    install_service,
+    service_status,
+    uninstall_service,
+)
 from .storage import StorageError
 
 
@@ -108,6 +116,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     actions_parser.add_argument("action_command", nargs="?", help="request or confirm")
 
+    subparsers.add_parser(
+        "install-service",
+        help="install the user-level LaunchAgent and start it",
+    )
+    subparsers.add_parser(
+        "uninstall-service",
+        help="stop the LaunchAgent and remove its plist",
+    )
+    subparsers.add_parser(
+        "service-status",
+        help="show LaunchAgent installation and load state",
+    )
+
     return parser
 
 
@@ -122,6 +143,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _cmd_doctor(args)
         if args.command == "monitor":
             return _cmd_monitor(args)
+        if args.command == "install-service":
+            return _cmd_install_service(args)
+        if args.command == "uninstall-service":
+            return _cmd_uninstall_service(args)
+        if args.command == "service-status":
+            return _cmd_service_status(args)
         if args.command in {"incidents", "actions"}:
             return _cmd_planned(args.command)
     except ConfigError as exc:
@@ -130,8 +157,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     except CollectionError as exc:
         print(f"collection error: {exc}", file=sys.stderr)
         return EXIT_ERROR
-    except (StorageError, ValueError) as exc:
-        print(f"monitor error: {exc}", file=sys.stderr)
+    except (StorageError, ServiceError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return EXIT_ERROR
     except KeyboardInterrupt:
         print("interrupted", file=sys.stderr)
@@ -187,6 +214,47 @@ def _cmd_monitor(args: argparse.Namespace) -> int:
     )
     print(f"monitor stopped after {collected} sample(s)")
     return EXIT_OK
+
+
+def _cmd_install_service(args: argparse.Namespace) -> int:
+    loaded = load_config(args.config, require_file=True)
+    _print_warnings(loaded.warnings, sys.stderr)
+
+    config_path = Path(args.config).expanduser() if args.config else _default_config_path()
+    plan = build_plan(
+        config_path=config_path,
+        state_dir=state_dir(loaded.data),
+    )
+    for warning in config_permission_warnings(plan.config_path):
+        print(f"warning: {warning}", file=sys.stderr)
+
+    actions = install_service(plan)
+    for action in actions:
+        print(action)
+    print("service installed; check status with: mac-sentinel service-status")
+    return EXIT_OK
+
+
+def _cmd_uninstall_service(args: argparse.Namespace) -> int:
+    actions = uninstall_service()
+    for action in actions:
+        print(action)
+    return EXIT_OK
+
+
+def _cmd_service_status(args: argparse.Namespace) -> int:
+    status = service_status()
+    print(f"installed: {'yes' if status.installed else 'no'}")
+    print(f"loaded: {'yes' if status.loaded else 'no'}")
+    print(f"plist: {status.plist_path}")
+    print(f"message: {status.message}")
+    return EXIT_OK
+
+
+def _default_config_path() -> Path:
+    from .config import DEFAULT_CONFIG_PATH
+
+    return DEFAULT_CONFIG_PATH
 
 
 def _cmd_planned(command: str) -> int:
